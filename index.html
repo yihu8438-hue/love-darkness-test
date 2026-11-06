@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恋爱阴湿度测试</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #eaeaea;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container { width: 100%; max-width: 680px; }
+
+  /* 密码门 */
+  #gate {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(160deg, #1a1a2e, #0f3460);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px;
+  }
+  #gate h1 { font-size: 22px; font-weight: 600; letter-spacing: 2px; }
+  #gate p { color: #9aa5b1; font-size: 14px; }
+  #gate input {
+    padding: 12px 18px; border-radius: 10px; border: 1px solid #3a4a6b;
+    background: #1f2a44; color: #fff; font-size: 16px; width: 200px;
+    text-align: center; letter-spacing: 4px; outline: none;
+  }
+  #gate button {
+    padding: 12px 36px; border-radius: 10px; border: none; cursor: pointer;
+    background: #e94560; color: #fff; font-size: 16px; font-weight: 600;
+  }
+  #gate button:active { transform: scale(0.97); }
+  .err { color: #e94560; font-size: 13px; min-height: 18px; }
+
+  /* 封面 */
+  .cover { text-align: center; padding: 60px 10px 40px; }
+  .cover h1 { font-size: 28px; margin-bottom: 10px; letter-spacing: 2px; }
+  .cover h2 { font-size: 18px; color: #c9d1d9; font-weight: 400; margin-bottom: 24px; }
+  .cover .sub { color: #9aa5b1; font-size: 15px; line-height: 1.8; margin-bottom: 36px; }
+  .cover .meta { color: #7b8794; font-size: 13px; margin-bottom: 40px; letter-spacing: 1px; }
+  .btn {
+    display: inline-block; padding: 14px 44px; border-radius: 30px;
+    background: linear-gradient(135deg, #e94560, #c23152); color: #fff;
+    font-size: 17px; font-weight: 600; border: none; cursor: pointer;
+    letter-spacing: 2px; box-shadow: 0 8px 24px rgba(233,69,96,0.35);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn.secondary {
+    background: transparent; border: 1px solid #3a4a6b; color: #c9d1d9;
+    box-shadow: none; padding: 12px 36px; font-size: 15px;
+  }
+
+  /* 答题 */
+  #quiz { display: none; padding-top: 10px; }
+  .progress-wrap {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(26,26,46,0.95); backdrop-filter: blur(6px);
+    padding: 14px 0 10px; margin-bottom: 8px;
+  }
+  .progress-bar { height: 6px; background: #2a3655; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #e94560, #ff8a9b); transition: width .3s; }
+  .progress-text { text-align: right; font-size: 12px; color: #7b8794; margin-top: 6px; }
+
+  .question {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 22px 20px; margin-bottom: 20px;
+  }
+  .q-title { font-size: 17px; line-height: 1.6; margin-bottom: 18px; font-weight: 600; }
+  .q-hint { font-size: 12px; color: #e94560; margin-bottom: 10px; }
+  .option {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 13px 16px; border-radius: 12px; border: 1px solid #2a3655;
+    background: #1b2439; margin-bottom: 10px; cursor: pointer;
+    font-size: 15px; line-height: 1.5; transition: all .15s;
+  }
+  .option:hover { border-color: #e94560; }
+  .option input { margin-top: 3px; accent-color: #e94560; flex-shrink: 0; }
+  .option.selected { border-color: #e94560; background: rgba(233,69,96,0.12); }
+  .option.disabled { opacity: .55; pointer-events: none; }
+
+  /* 结果 */
+  #result { display: none; text-align: center; padding-top: 30px; }
+  .score-ring {
+    width: 180px; height: 180px; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 28px; position: relative;
+  }
+  .score-ring .num { font-size: 48px; font-weight: 700; line-height: 1; }
+  .score-ring .label { font-size: 13px; color: #9aa5b1; margin-top: 6px; }
+  .result-title { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+  .result-desc { font-size: 15px; line-height: 1.9; color: #c9d1d9; text-align: left;
+    background: rgba(255,255,255,0.04); border-radius: 14px; padding: 18px 20px; margin-bottom: 26px; }
+  .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  .footer { text-align: center; color: #4a5568; font-size: 12px; padding: 40px 0 20px; }
+</style>
+</head>
+<body>
+
+<!-- 密码门 -->
+<div id="gate">
+  <h1>🔒 恋爱阴湿度测试</h1>
+  <p>请输入访问密码</p>
+  <input id="pwd" type="password" placeholder="****" maxlength="8" autocomplete="off">
+  <div class="err" id="err"></div>
+  <button onclick="checkPwd()">进 入</button>
+</div>
+
+<div class="container">
+
+  <!-- 封面 -->
+  <div class="cover" id="cover">
+    <h1>你的恋爱阴湿度</h1>
+    <h2>有多高？</h2>
+    <p class="sub">你是真的深情，还是只是太会内耗？<br>20道恋爱情境题，看看藏在心动背后的另一面。</p>
+    <p class="meta">✦ 20道情境题 &nbsp; ✦ 约2分钟 &nbsp; ✦ 结果可分享</p>
+    <button class="btn" onclick="startQuiz()">开始测试</button>
+  </div>
+
+  <!-- 答题 -->
+  <div id="quiz">
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
+      <div class="progress-text"><span id="cur">0</span> / 20</div>
+    </div>
+    <div id="questions"></div>
+    <div style="text-align:center;margin:10px 0 30px;">
+      <button class="btn secondary" onclick="submitQuiz()">提交结果</button>
+    </div>
+  </div>
+
+  <!-- 结果 -->
+  <div id="result">
+    <div class="score-ring" id="ring">
+      <div class="num" id="scoreNum">0</div>
+      <div class="label">阴湿度指数</div>
+    </div>
+    <div class="result-title" id="resTitle"></div>
+    <div class="result-desc" id="resDesc"></div>
+    <div class="actions">
+      <button class="btn" onclick="shareResult()">分享结果</button>
+      <button class="btn secondary" onclick="restart()">再测一次</button>
+    </div>
+  </div>
+
+  <div class="footer">仅供娱乐 · 请理性看待</div>
+</div>
+
+<script>
+/* ============ 密码 ============ */
+const PASSWORD = "0802";
+function checkPwd() {
+  const v = document.getElementById("pwd").value.trim();
+  if (v === PASSWORD) {
+    document.getElementById("gate").style.display = "none";
+  } else {
+    document.getElementById("err").textContent = "密码错误，请重试";
+    document.getElementById("pwd").value = "";
+  }
+}
+document.getElementById("pwd").addEventListener("keydown", e => {
+  if (e.key === "Enter") checkPwd();
+});
+
+/* ============ 题库 ============
+   type: "single" 单选（radio）
+   type: "multi"  多选（checkbox）
+   每个选项 value 为分数，计分规则见下方 calc
+*/
+const questions = [
+  {
+    q: "对方说想一个人待会儿，你会？",
+    type: "single",
+    options: [
+      { text: "A. 追问到底发生了什么", score: 3 },
+      { text: "B. 愤怒失落，但理解", score: 2 },
+      { text: "C. 说好，然后自己也去做点事", score: 0 },
+      { text: "D. 表面答应，心里开始复盘整段关系", score: 4 }
+    ]
+  },
+  {
+    q: "你更容易被哪种行为打动？（可多选）",
+    type: "multi",
+    options: [
+      { text: "记得你随口提过的小事", score: 2 },
+      { text: "在你情绪低落时安静陪着", score: 2 },
+      { text: "主动分享日常和行程", score: 1 },
+      { text: "吵架后先低头哄你", score: 1 },
+      { text: "在别人面前维护你", score: 2 }
+    ]
+  },
+  {
+    q: "对方回消息慢了，你第一反应是？",
+    type: "single",
+    options: [
+      { text: "A. 可能在忙，等会儿再说", score: 0 },
+      { text: "B. 有点在意，但先做自己的事", score: 1 },
+      { text: "C. 开始想是不是自己说错话了", score: 3 },
+      { text: "D. 反复看聊天记录，越想越难受", score: 4 }
+    ]
+  },
+  {
+    q: "你们约好周末见面，对方临时说要加班，你会？",
+    type: "single",
+    options: [
+      { text: "A. 说没关系，改天再约", score: 0 },
+      { text: "B. 嘴上说好，心里有点失落", score: 2 },
+      { text: "C. 怀疑是不是不想见自己", score: 3 },
+      { text: "D. 情绪明显变差，但不说原因", score: 4 }
+    ]
+  },
+  {
+    q: "对方夸你的时候，你通常？",
+    type: "single",
+    options: [
+      { text: "A. 开心接受，谢谢对方", score: 0 },
+      { text: "B. 有点不好意思，但心里高兴", score: 1 },
+      { text: "C. 想对方是不是在客气", score: 3 },
+      { text: "D. 觉得对方迟早会失望", score: 4 }
+    ]
+  },
+  {
+    q: "看到对方和异性朋友互动，你会？",
+    type: "single",
+    options: [
+      { text: "A. 很正常，不会多想", score: 0 },
+      { text: "B. 稍微在意，但不会说", score: 2 },
+      { text: "C. 忍不住反复看那条动态", score: 3 },
+      { text: "D. 开始脑补各种可能，情绪低落", score: 4 }
+    ]
+  },
+  {
+    q: "吵架后，你更常做的是？",
+    type: "single",
+    options: [
+      { text: "A. 冷静下来主动沟通", score: 0 },
+      { text: "B. 等对方先开口", score: 2 },
+      { text: "C. 反复回想自己哪里做错了", score: 3 },
+      { text: "D. 说狠话，然后又后悔", score: 4 }
+    ]
+  },
+  {
+    q: "对方说“最近有点累”，你会？",
+    type: "single",
+    options: [
+      { text: "A. 问需要我做什么吗", score: 0 },
+      { text: "B. 有点担心，但给对方空间", score: 1 },
+      { text: "C. 想是不是自己给的压力", score: 3 },
+      { text: "D. 觉得对方在疏远自己", score: 4 }
+    ]
+  },
+  {
+    q: "你会在心里给对方“打分”吗？",
+    type: "single",
+    options: [
+      { text: "A. 不会，喜欢就是喜欢", score: 0 },
+      { text: "B. 偶尔会想，但不会当真", score: 1 },
+      { text: "C. 会，而且容易记住扣分项", score: 3 },
+      { text: "D. 会，并因此反复纠结要不要继续", score: 4 }
+    ]
+  },
+  {
+    q: "对方忘记你们的小约定，你会？",
+    type: "single",
+    options: [
+      { text: "A. 提醒一下就好", score: 0 },
+      { text: "B. 有点失落，但理解", score: 2 },
+      { text: "C. 觉得对方不在意自己", score: 3 },
+      { text: "D. 不说，但心里记很久", score: 4 }
+    ]
+  },
+  {
+    q: "你更害怕哪种情况？",
+    type: "single",
+    options: [
+      { text: "A. 对方直接说不喜欢了", score: 1 },
+      { text: "B. 对方慢慢冷淡", score: 3 },
+      { text: "C. 对方一直不说清楚", score: 3 },
+      { text: "D. 自己先陷进去", score: 4 }
+    ]
+  },
+  {
+    q: "对方夸别人好看，你会？",
+    type: "single",
+    options: [
+      { text: "A. 跟着一起夸", score: 0 },
+      { text: "B. 心里有点酸，但不说", score: 2 },
+      { text: "C. 开始比较自己和对方", score: 3 },
+      { text: "D. 情绪变差，觉得被比较了", score: 4 }
+    ]
+  },
+  {
+    q: "你会不会反复看对方的社交动态？",
+    type: "single",
+    options: [
+      { text: "A. 很少", score: 0 },
+      { text: "B. 偶尔看看", score: 1 },
+      { text: "C. 经常看，还会猜含义", score: 3 },
+      { text: "D. 会翻很久，甚至看评论区", score: 4 }
+    ]
+  },
+  {
+    q: "对方说“我需要一点空间”，你第一反应是？",
+    type: "single",
+    options: [
+      { text: "A. 好，尊重你", score: 0 },
+      { text: "B. 有点不安，但接受", score: 2 },
+      { text: "C. 想是不是要分手了", score: 4 },
+      { text: "D. 开始回想最近哪里出了问题", score: 3 }
+    ]
+  },
+  {
+    q: "你会在关系里“预演分手”吗？",
+    type: "single",
+    options: [
+      { text: "A. 不会", score: 0 },
+      { text: "B. 偶尔一闪而过", score: 1 },
+      { text: "C. 会，尤其情绪低落时", score: 3 },
+      { text: "D. 经常想，还会提前难过", score: 4 }
+    ]
+  },
+  {
+    q: "对方情绪不好时，你会？",
+    type: "single",
+    options: [
+      { text: "A. 问清楚，一起面对", score: 0 },
+      { text: "B. 先陪着，等对方想说", score: 1 },
+      { text: "C. 担心是不是自己的问题", score: 3 },
+      { text: "D. 跟着情绪低落，越想越多", score: 4 }
+    ]
+  },
+  {
+    q: "你更常在心里说哪句话？",
+    type: "single",
+    options: [
+      { text: "A. “没关系，慢慢来”", score: 0 },
+      { text: "B. “有点在意，但还好”", score: 1 },
+      { text: "C. “他是不是没那么喜欢我”", score: 3 },
+      { text: "D. “我是不是又搞砸了”", score: 4 }
+    ]
+  },
+  {
+    q: "对方主动道歉，你会？",
+    type: "single",
+    options: [
+      { text: "A. 接受，翻篇", score: 0 },
+      { text: "B. 嘴上说没事，心里还要缓一缓", score: 2 },
+      { text: "C. 想对方是不是只是敷衍", score: 3 },
+      { text: "D. 忍不住再提一次，确认对方真心的", score: 4 }
+    ]
+  },
+  {
+    q: "你觉得自己在恋爱里？",
+    type: "single",
+    options: [
+      { text: "A. 比较松弛", score: 0 },
+      { text: "B. 偶尔会想很多", score: 1 },
+      { text: "C. 经常内耗，但会藏起来", score: 3 },
+      { text: "D. 很容易被细节影响情绪", score: 4 }
+    ]
+  },
+  {
+    q: "如果给“阴湿度”打分，你猜自己？",
+    type: "single",
+    options: [
+      { text: "A. 很低，基本阳光", score: 0 },
+      { text: "B. 中等，偶尔阴天", score: 1 },
+      { text: "C. 偏高，常在心里下雨", score: 3 },
+      { text: "D. 很高，阴晴不定", score: 4 }
+    ]
+  }
+];
+
+/* ============ 状态 ============ */
+let answers = new Array(questions.length).fill(null);
+
+/* ============ 渲染题目 ============ */
+function renderQuestions() {
+  const box = document.getElementById("questions");
+  box.innerHTML = "";
+  questions.forEach((q, qi) => {
+    const div = document.createElement("div");
+    div.className = "question";
+    div.id = "q" + qi;
+
+    const hint = q.type === "multi"
+      ? '<div class="q-hint">可多选</div>' : "";
+    div.innerHTML = `<div class="q-title">${qi + 1}. ${q.q}</div>${hint}`;
+
+    q.options.forEach((opt, oi) => {
+      const label = document.createElement("label");
+      label.className = "option";
+      const input = document.createElement("input");
+      input.type = q.type === "multi" ? "checkbox" : "radio";
+      input.name = "q" + qi;
+      input.value = oi;
+
+      input.addEventListener("change", () => {
+        if (q.type === "multi") {
+          const checked = [...div.querySelectorAll("input:checked")].map(i => +i.value);
+          answers[qi] = checked.length ? checked : null;
+          div.querySelectorAll(".option").forEach(l => {
+            l.classList.toggle("selected", l.querySelector("input").checked);
+          });
+        } else {
+          answers[qi] = oi;
+          div.querySelectorAll(".option").forEach(l => l.classList.remove("selected"));
+          label.classList.add("selected");
+        }
+        updateProgress();
+      });
+
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(" " + opt.text));
+      div.appendChild(label);
+    });
+
+    box.appendChild(div);
+  });
+  updateProgress();
+}
+
+/* ============ 进度 ============ */
+function updateProgress() {
+  const done = answers.filter(a => a !== null).length;
+  document.getElementById("cur").textContent = done;
+  document.getElementById("fill").style.width = (done / questions.length * 100) + "%";
+}
+
+/* ============ 开始 / 提交 ============ */
+function startQuiz() {
+  document.getElementById("cover").style.display = "none";
+  document.getElementById("quiz").style.display = "block";
+  renderQuestions();
+  window.scrollTo(0, 0);
+}
+
+function submitQuiz() {
+  const missing = answers.findIndex(a => a === null);
+  if (missing !== -1) {
+    alert("还有第 " + (missing + 1) + " 题没有作答哦～");
+    document.getElementById("q" + missing).scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  showResult();
+}
+
+/* ============ 计分 ============ */
+function calcScore() {
+  let total = 0;
+  let max = 0;
+  questions.forEach((q, qi) => {
+    if (q.type === "multi") {
+      // 多选：累加所选分数，但封顶为该题最高单项分 + 1，避免多选无限拉高
+      const picked = answers[qi].map(i => q.options[i].score);
+      const sum = picked.reduce((a, b) => a + b, 0);
+      const cap = Math.max(...q.options.map(o => o.score)) + 1;
+      total += Math.min(sum, cap);
+      max += cap;
+    } else {
+      total += q.options[answers[qi]].score;
+      max += Math.max(...q.options.map(o => o.score));
+    }
+  });
+  return Math.round(total / max * 100);
+}
+
+/* ============ 结果展示 ============ */
+function showResult() {
+  document.getElementById("quiz").style.display = "none";
+  document.getElementById("result").style.display = "block";
+  window.scrollTo(0, 0);
+
+  const score = calcScore();
+  const ring = document.getElementById("ring");
+  const num = document.getElementById("scoreNum");
+  const title = document.getElementById("resTitle");
+  const desc = document.getElementById("resDesc");
+
+  // 分数动画
+  let cur = 0;
+  const timer = setInterval(() => {
+    cur += Math.ceil(score / 30) || 1;
+    if (cur >= score) { cur = score; clearInterval(timer); }
+    num.textContent = cur;
+  }, 30);
+
+  // 颜色随分数变化
+  const hue = 200 - score * 1.2; // 高分偏红
+  ring.style.background = `conic-gradient(hsl(${hue},70%,55%) ${score * 3.6}deg, #2a3655 0deg)`;
+  ring.style.boxShadow = `0 0 40px hsla(${hue},70%,55%,0.35)`;
+
+  let t, d;
+  if (score <= 25) {
+    t = "☀️ 低阴湿度 · 松弛型恋人";
+    d = "你在关系里相对松弛，能给对方空间，也能照顾自己的情绪。你不是不在乎，而是知道“在意”不等于“抓紧”。偶尔也会不安，但你更愿意用沟通而不是脑补来解决问题。保持这份清醒，也记得偶尔让对方知道你需要他。";
+  } else if (score <= 50) {
+    t = "⛅ 中等阴湿度 · 敏感但可控";
+    d = "你会在意细节，也会偶尔想多，但大多时候能把自己拉回来。你重视关系的安全感，也愿意为对方调整。需要注意的是：别把“我没事”当成习惯，有些在意说出来，比憋在心里更让人靠近你。";
+  } else if (score <= 75) {
+    t = "🌧️ 偏高阴湿度 · 内耗型深情";
+    d = "你很容易被细节牵动情绪，习惯在心里反复复盘，却不太愿意直接表达。你不是不信任对方，而是太害怕失去。试着把“他是不是没那么喜欢我”换成“我现在需要什么”，把脑补的时间用来沟通，会轻松很多。";
+  } else {
+    t = "⛈️ 高阴湿度 · 暴雨型心动";
+    d = "你的情绪浓度很高，一点风吹草动都能在心里掀起暴雨。你深情、投入，但也容易把自己困在想象出来的剧情里。请记得：关系不是考试，不需要你提前预演所有坏结果。先照顾好自己的情绪，再去爱别人，你会更有底气。";
+  }
+  title.textContent = t;
+  desc.textContent = d;
+}
+
+/* ============ 分享 ============ */
+function shareResult() {
+  const score = calcScore();
+  const text = `我的恋爱阴湿度是 ${score}%，你呢？来测测你的心动背后藏着什么～`;
+  if (navigator.share) {
+    navigator.share({ title: "恋爱阴湿度测试", text, url: location.href }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text + " " + location.href).then(() => {
+      alert("结果已复制，去分享吧～");
+    }).catch(() => {
+      prompt("复制这段分享：", text + " " + location.href);
+    });
+  }
+}
+
+/* ============ 重测 ============ */
+function restart() {
+  answers = new Array(questions.length).fill(null);
+  document.getElementById("result").style.display = "none";
+  document.getElementById("quiz").style.display = "none";
+  document.getElementById("cover").style.display = "block";
+  document.getElementById("scoreNum").textContent = "0";
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
